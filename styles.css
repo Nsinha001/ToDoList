@@ -192,10 +192,23 @@ button { cursor: pointer; }
 }
 .date-line { display: flex; align-items: center; gap: 16px; color: #777a88; font-size: 13px; font-weight: 600; }
 .theme-picker { display: flex; align-items: center; gap: 10px; margin-left: auto; color: var(--muted); font-size: 11px; font-weight: 700; }
+.theme-select { position: relative; display: inline-flex; }
+.theme-select::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
 .theme-picker select {
   min-width: 104px;
   height: 34px;
-  padding: 0 30px 0 13px;
+  padding: 0 32px 0 13px;
   border: 1px solid var(--line);
   border-radius: 999px;
   outline: none;
@@ -203,6 +216,8 @@ button { cursor: pointer; }
   color: var(--ink);
   font-size: 12px;
   font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
 }
 .theme-picker select:focus { border-color: var(--lavender); box-shadow: 0 0 0 3px var(--lavender-soft); }
 .progress-ring { position: relative; width: 38px; height: 38px; }

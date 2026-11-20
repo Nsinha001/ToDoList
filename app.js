@@ -142,7 +142,7 @@ function getVisibleTasks() {
   let visible = [...tasks];
   if (currentCourse) visible = visible.filter(task => task.course === currentCourse);
   if (currentView === "today") visible = visible.filter(task => task.due === isoToday);
-  if (currentView === "upcoming") visible = visible.filter(task => task.due && task.due > isoToday);
+  if (currentView === "upcoming") visible = visible.filter(task => task.due && task.due > isoToday && !task.completed);
   if (currentView === "completed") visible = visible.filter(task => task.completed);
   if (currentView === "calendar") visible = visible.filter(task => task.due);
   return visible.sort((a, b) => Number(a.completed) - Number(b.completed));
