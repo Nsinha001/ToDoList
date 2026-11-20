@@ -77,7 +77,7 @@
               </select>
             </span>
           </label>
-          <button class="add-button" id="addTaskButton"><span>+</span> Add task</button>
+          <button class="add-button" id="addTaskButton"><span>+</span> Add assignment</button>
         </header>
 
         <div class="content">
@@ -108,13 +108,13 @@
       <form id="taskForm" method="dialog">
         <div class="dialog-header">
           <div>
-            <p class="eyebrow">New task</p>
-            <h2>Add a task</h2>
+            <p class="eyebrow">New assignment</p>
+            <h2>Add an assignment</h2>
           </div>
           <button type="button" class="dialog-close" id="closeDialog" aria-label="Close">&times;</button>
         </div>
-        <label>Task name
-          <input id="taskName" name="name" required placeholder="What needs to be done?" />
+        <label>Assignment name
+          <input id="taskName" name="name" required placeholder="e.g. Chapter 5 problem set" />
         </label>
         <div class="form-grid">
           <label>Course
@@ -142,7 +142,7 @@
         <label>Notes <span>(optional)</span>
           <textarea id="taskNotes" name="notes" rows="3" placeholder="Add details or a description"></textarea>
         </label>
-        <button class="submit-button" type="submit">Create task</button>
+        <button class="submit-button" type="submit">Create assignment</button>
       </form>
     </dialog>
 

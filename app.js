@@ -103,6 +103,17 @@ function detectCourse(text, fallback = "") {
   return fallback && fallback !== "Imported" ? fallback : "Imported";
 }
 
+function isAssignmentName(name) {
+  const value = String(name || "").trim();
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  const classOnly = /^(?:class|lecture|seminar|discussion|recitation|office\s*hours)\b/i
+    .test(lower)
+    || /\b(?:lecture|class|office\s*hours)\s*(?:meeting|session)\b/i.test(lower)
+    || courses.some(course => lower === course.toLowerCase());
+  return !classOnly;
+}
+
 function addCourse(name) {
   const cleanName = name.trim();
   if (!cleanName || courses.includes(cleanName)) return false;
@@ -314,6 +325,7 @@ async function importCalendar(file) {
 
       const name = unescapeIcs(getIcsProperty(eventLines, "SUMMARY") || "Imported event");
       const notes = unescapeIcs(getIcsProperty(eventLines, "DESCRIPTION"));
+      if (!isAssignmentName(name)) continue;
       const importCourse = detectCourse(`${name} ${notes}`, calendarName);
       tasks.push({
         id: `imported-${Date.now()}-${imported}`,
@@ -332,7 +344,7 @@ async function importCalendar(file) {
       saveTasks();
       render();
       document.getElementById("importCalendarFile").value = "";
-      alert(`${imported} ${imported === 1 ? "event" : "events"} imported.`);
+      alert(`${imported} ${imported === 1 ? "assignment" : "assignments"} imported.`);
     } else {
       alert("No calendar events were found in that file.");
     }
@@ -382,7 +394,7 @@ function render() {
   if (isCalendar) {
     renderCalendar();
   } else if (!visible.length) {
-    taskList.innerHTML = `<div class="empty-state"><div><strong>${currentView === "completed" ? "No completed tasks" : "You're all caught up"}</strong><span>Nothing here right now.</span></div></div>`;
+    taskList.innerHTML = `<div class="empty-state"><div><strong>${currentView === "completed" ? "No completed assignments" : "You're all caught up"}</strong><span>Nothing here right now.</span></div></div>`;
   } else {
     visible.forEach(task => {
       const card = document.createElement("article");
@@ -398,13 +410,13 @@ function render() {
           </div>
         </div>
         <div class="task-actions">
-          <button class="task-menu" data-menu="${task.id}" aria-label="Task actions" aria-expanded="false">
+          <button class="task-menu" data-menu="${task.id}" aria-label="Assignment actions" aria-expanded="false">
             <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
           </button>
           <div class="task-action-menu" data-actions="${task.id}" hidden>
             <button type="button" data-toggle="${task.id}">${task.completed ? "Mark incomplete" : "Mark complete"}</button>
             <button type="button" data-edit-course="${task.id}">Change course</button>
-            <button type="button" class="danger" data-delete="${task.id}">Delete task</button>
+            <button type="button" class="danger" data-delete="${task.id}">Delete assignment</button>
           </div>
         </div>`;
       taskList.appendChild(card);
@@ -418,11 +430,11 @@ function render() {
   document.getElementById("ringProgress").style.strokeDashoffset = 97.4 * (1 - percent / 100);
   document.getElementById("todayCount").textContent = todayTasks.filter(task => !task.completed).length;
   document.getElementById("upcomingCount").textContent = tasks.filter(task => task.due && task.due > isoToday && !task.completed).length;
-  document.getElementById("taskSummary").textContent = `${visible.length} ${visible.length === 1 ? "task" : "tasks"}`;
+  document.getElementById("taskSummary").textContent = `${visible.length} ${visible.length === 1 ? "assignment" : "assignments"}`;
 
   const titleNames = { today: "Today", upcoming: "Upcoming", completed: "Completed", calendar: "Calendar" };
   document.getElementById("pageTitle").textContent = currentCourse || titleNames[currentView];
-  document.getElementById("sectionTitle").textContent = currentCourse ? `${currentCourse} tasks` : (currentView === "today" ? "Tasks for today" : titleNames[currentView]);
+  document.getElementById("sectionTitle").textContent = currentCourse ? `${currentCourse} assignments` : (currentView === "today" ? "Assignments for today" : titleNames[currentView]);
 }
 
 document.getElementById("currentDate").textContent = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -521,6 +533,10 @@ taskForm.addEventListener("submit", event => {
   event.preventDefault();
   const name = document.getElementById("taskName").value.trim();
   if (!name) return;
+  if (!isAssignmentName(name)) {
+    alert("Classes and meetings should be added under My courses, not as assignments.");
+    return;
+  }
   if (!courses.length) {
     taskDialog.close();
     courseDialog.showModal();
