@@ -135,7 +135,11 @@ function detectCourse(text, fallback = "") {
   }
 
   if (bestMatch && bestScore >= 3) return bestMatch;
-  return fallback && fallback !== "Imported" ? fallback : "Imported";
+  const fallbackName = normalizeCourseText(fallback);
+  if (fallbackName && courses.some(course => normalizeCourseText(course) === fallbackName)) {
+    return courses.find(course => normalizeCourseText(course) === fallbackName);
+  }
+  return "Imported";
 }
 
 function isAssignmentName(name) {
@@ -180,8 +184,10 @@ function renderCourses() {
   const taskCourse = document.getElementById("taskCourse");
   const selected = taskCourse.value;
   taskCourse.innerHTML = courses.length
-    ? courses.map(course => `<option>${escapeHtml(course)}</option>`).join("") + `<option>Imported</option>`
-    : `<option value="" disabled selected>Add a course first</option>`;
+    ? courses.map(course => `<option>${escapeHtml(course)}</option>`).join("") +
+      `<option>Imported</option><option value="__create_course__">+ Create a new class</option>`
+    : `<option value="" disabled selected>Add a course first</option>` +
+      `<option value="__create_course__">+ Create a new class</option>`;
   if (courses.includes(selected)) taskCourse.value = selected;
 
   courseList.querySelectorAll(".course-item").forEach(button => {
@@ -379,7 +385,13 @@ async function importCalendar(file) {
       const name = unescapeIcs(getIcsProperty(eventLines, "SUMMARY") || "Imported event");
       const notes = unescapeIcs(getIcsProperty(eventLines, "DESCRIPTION"));
       if (!isAssignmentName(name)) continue;
-      const importCourse = detectCourse(`${name} ${notes}`, calendarName);
+      const eventCourseText = [
+        name,
+        notes,
+        getIcsPropertyValues(eventLines, ["LOCATION", "CATEGORIES", "CLASS", "ORGANIZER"])
+      ].filter(Boolean).join(" ");
+      const calendarContext = calendarName ? ` ${calendarName}` : "";
+      const importCourse = detectCourse(`${eventCourseText}${calendarContext}`, calendarName);
       tasks.push({
         id: `imported-${Date.now()}-${imported}`,
         name,
@@ -594,11 +606,14 @@ taskForm.addEventListener("submit", event => {
     return;
   }
   if (!courses.length) {
-    taskDialog.close();
     courseDialog.showModal();
     return;
   }
   const selectedCourse = document.getElementById("taskCourse").value;
+  if (selectedCourse === "__create_course__") {
+    courseDialog.showModal();
+    return;
+  }
   const notes = document.getElementById("taskNotes").value.trim();
   const detectedCourse = detectCourse(`${name} ${notes}`);
   const course = detectedCourse !== "Imported" ? detectedCourse : (selectedCourse === "Imported" ? "Imported" : selectedCourse);
@@ -632,6 +647,12 @@ document.getElementById("mobileMenu").addEventListener("click", () => {
 
 themeSelect.addEventListener("change", event => applyTheme(event.target.value));
 
+document.getElementById("taskCourse").addEventListener("change", event => {
+  if (event.target.value === "__create_course__") {
+    courseDialog.showModal();
+  }
+});
+
 const courseDialog = document.getElementById("courseDialog");
 const courseForm = document.getElementById("courseForm");
 document.getElementById("addCourseButton").addEventListener("click", () => courseDialog.showModal());
@@ -644,6 +665,7 @@ courseForm.addEventListener("submit", event => {
   const name = document.getElementById("courseName").value.trim();
   if (!name) return;
   addCourse(name);
+  document.getElementById("taskCourse").value = name;
   courseForm.reset();
   courseDialog.close();
   updateDetectedCourse();
