@@ -108,8 +108,8 @@ function detectCourse(text, fallback = "") {
 
     let score = 0;
     if (normalized.includes(courseName)) score = courseName.length * 2;
-    if (courseName.replace(/\s/g, "").length >= 3 &&
-      compact.includes(courseName.replace(/\s/g, ""))) {
+    const courseCompact = courseName.replace(/\s/g, "");
+    if (courseCompact.length >= 3 && compact.includes(courseCompact)) {
       score += courseName.length * 2;
     }
 
@@ -117,6 +117,15 @@ function detectCourse(text, fallback = "") {
     const textWords = new Set(normalized.split(" ").filter(Boolean));
     for (const word of courseWords) {
       if (textWords.has(word)) score += word.length;
+    }
+
+    const courseCodeMatch = courseName.match(/^([a-z]{2,8})\s*(\d{2,4}[a-z]?)/);
+    if (courseCodeMatch) {
+      const codeWithSpace = `${courseCodeMatch[1]} ${courseCodeMatch[2]}`;
+      const codeCompact = `${courseCodeMatch[1]}${courseCodeMatch[2]}`;
+      if (normalized.includes(codeWithSpace) || compact.includes(codeCompact)) {
+        score += 30;
+      }
     }
 
     if (score > bestScore) {
@@ -145,6 +154,17 @@ function addCourse(name) {
   if (!cleanName || courses.includes(cleanName)) return false;
   courses.push(cleanName);
   saveCourses();
+  let changed = false;
+  tasks.forEach(task => {
+    if (task.course === "Imported") {
+      const detected = detectCourse(`${task.name || ""} ${task.notes || ""}`);
+      if (detected !== "Imported") {
+        task.course = detected;
+        changed = true;
+      }
+    }
+  });
+  if (changed) saveTasks();
   renderCourses();
   return true;
 }
@@ -290,6 +310,13 @@ function getIcsProperty(lines, property) {
   const line = lines.find(item => item.toUpperCase().startsWith(`${property}:`) || item.toUpperCase().startsWith(`${property};`));
   if (!line) return "";
   return line.slice(line.indexOf(":") + 1).trim();
+}
+
+function getIcsPropertyValues(lines, properties) {
+  return properties
+    .map(property => unescapeIcs(getIcsProperty(lines, property)))
+    .filter(Boolean)
+    .join(" ");
 }
 
 function parseIcsDate(value) {
