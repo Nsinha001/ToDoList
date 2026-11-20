@@ -18,9 +18,16 @@ let courses = JSON.parse(localStorage.getItem("studyflowCourses")) || defaultCou
 const palette = ["#8668d9", "#65a6df", "#e9a95e", "#63bda1", "#b38cff", "#db7fa8", "#79b7a5", "#dd846f"];
 
 let tasks = JSON.parse(localStorage.getItem("studyflowTasks")) || defaultTasks;
-let currentView = "today";
-let currentCourse = null;
-let calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+const savedNavigation = JSON.parse(localStorage.getItem("studyflowNavigation") || "null");
+const savedView = ["today", "upcoming", "calendar", "completed", "all"].includes(savedNavigation?.view)
+  ? savedNavigation.view
+  : "today";
+let currentView = savedView;
+let currentCourse = typeof savedNavigation?.course === "string" ? savedNavigation.course : null;
+let calendarMonth = savedNavigation?.month
+  ? new Date(`${savedNavigation.month}-01T00:00:00`)
+  : new Date(today.getFullYear(), today.getMonth(), 1);
+if (Number.isNaN(calendarMonth.getTime())) calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
 if (localStorage.getItem("studyflowBlankStart") !== "1") {
   localStorage.removeItem("studyflowTasks");
@@ -34,7 +41,7 @@ const taskList = document.getElementById("taskList");
 const taskDialog = document.getElementById("taskDialog");
 const taskForm = document.getElementById("taskForm");
 const themeSelect = document.getElementById("themeSelect");
-const themes = ["purple", "light", "ocean", "forest"];
+const themes = ["purple", "dark", "ocean", "forest"];
 
 function applyTheme(theme) {
   const selectedTheme = themes.includes(theme) ? theme : "purple";
@@ -61,6 +68,14 @@ function escapeHtml(value) {
 
 function saveCourses() {
   localStorage.setItem("studyflowCourses", JSON.stringify(courses));
+}
+
+function saveNavigation() {
+  localStorage.setItem("studyflowNavigation", JSON.stringify({
+    view: currentView,
+    course: currentCourse,
+    month: `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, "0")}`
+  }));
 }
 
 function getCourseColor(course) {
@@ -113,6 +128,7 @@ function renderCourses() {
     button.addEventListener("click", () => {
       currentCourse = button.dataset.course;
       currentView = "all";
+      saveNavigation();
       document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
       document.querySelectorAll(".course-item").forEach(item => item.classList.remove("active"));
       button.classList.add("active");
@@ -199,10 +215,12 @@ function renderCalendar() {
 
   document.getElementById("previousMonth").addEventListener("click", () => {
     calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+    saveNavigation();
     renderCalendar();
   });
   document.getElementById("nextMonth").addEventListener("click", () => {
     calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+    saveNavigation();
     renderCalendar();
   });
   document.getElementById("exportCalendar").addEventListener("click", exportCalendar);
@@ -404,6 +422,7 @@ document.querySelectorAll(".nav-item").forEach(button => {
   button.addEventListener("click", () => {
     currentView = button.dataset.view;
     currentCourse = null;
+    saveNavigation();
     document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
     document.querySelectorAll(".course-item").forEach(item => item.classList.remove("active"));
     button.classList.add("active");
@@ -467,6 +486,7 @@ taskForm.addEventListener("submit", event => {
   if (currentView !== "calendar") {
     currentView = "today";
     currentCourse = null;
+    saveNavigation();
   }
   render();
 });
@@ -495,4 +515,5 @@ courseForm.addEventListener("submit", event => {
 
 applyTheme(localStorage.getItem("studyflowTheme"));
 renderCourses();
+document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === currentView));
 render();
