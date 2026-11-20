@@ -84,22 +84,48 @@ function getCourseColor(course) {
   return palette[index >= 0 ? index % palette.length : 0];
 }
 
-function detectCourse(text, fallback = "") {
-  const normalized = String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  const match = courses.find(course => {
-    const courseName = course.toLowerCase();
-    if (normalized.includes(courseName)) return true;
-    const words = courseName.split(/\s+/).filter(word => word.length >= 4);
-    return words.some(word => normalized.includes(word));
-  });
-  if (match) return match;
+function normalizeCourseText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
-  const bracketMatch = String(text || "").match(/[\[(]([^[\]()]{2,40})[\])]/);
-  if (bracketMatch) {
-    const name = bracketMatch[1].trim();
-    addCourse(name);
-    return name;
+function detectCourse(text, fallback = "") {
+  const normalized = normalizeCourseText(text);
+  const compact = normalized.replace(/\s/g, "");
+  if (!courses.length) return fallback && fallback !== "Imported" ? fallback : "Imported";
+
+  let bestMatch = "";
+  let bestScore = 0;
+
+  for (const course of courses) {
+    const courseName = normalizeCourseText(course);
+    if (!courseName) continue;
+
+    let score = 0;
+    if (normalized.includes(courseName)) score = courseName.length * 2;
+    if (courseName.replace(/\s/g, "").length >= 3 &&
+      compact.includes(courseName.replace(/\s/g, ""))) {
+      score += courseName.length * 2;
+    }
+
+    const courseWords = courseName.split(" ").filter(word => word.length >= 3);
+    const textWords = new Set(normalized.split(" ").filter(Boolean));
+    for (const word of courseWords) {
+      if (textWords.has(word)) score += word.length;
+    }
+
+    if (score > bestScore) {
+      bestMatch = course;
+      bestScore = score;
+    }
   }
+
+  if (bestMatch && bestScore >= 3) return bestMatch;
   return fallback && fallback !== "Imported" ? fallback : "Imported";
 }
 
@@ -523,7 +549,10 @@ document.addEventListener("click", event => {
   }
 });
 
-document.getElementById("addTaskButton").addEventListener("click", () => taskDialog.showModal());
+document.getElementById("addTaskButton").addEventListener("click", () => {
+  taskDialog.showModal();
+  updateDetectedCourse();
+});
 document.getElementById("closeDialog").addEventListener("click", () => taskDialog.close());
 taskDialog.addEventListener("click", event => {
   if (event.target === taskDialog) taskDialog.close();
@@ -590,6 +619,7 @@ courseForm.addEventListener("submit", event => {
   addCourse(name);
   courseForm.reset();
   courseDialog.close();
+  updateDetectedCourse();
 });
 
 applyTheme(localStorage.getItem("studyflowTheme"));
