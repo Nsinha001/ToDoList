@@ -85,10 +85,13 @@ function getCourseColor(course) {
 }
 
 function detectCourse(text, fallback = "") {
-  const haystack = ` ${text || ""} `.toLowerCase();
-  const match = courses.find(course => haystack.includes(` ${course.toLowerCase()} `) ||
-    haystack.includes(`[${course.toLowerCase()}]`) ||
-    haystack.includes(`(${course.toLowerCase()})`));
+  const normalized = String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const match = courses.find(course => {
+    const courseName = course.toLowerCase();
+    if (normalized.includes(courseName)) return true;
+    const words = courseName.split(/\s+/).filter(word => word.length >= 4);
+    return words.some(word => normalized.includes(word));
+  });
   if (match) return match;
 
   const bracketMatch = String(text || "").match(/[\[(]([^[\]()]{2,40})[\])]/);
@@ -394,9 +397,16 @@ function render() {
             <span class="due${task.due && task.due < isoToday && !task.completed ? " overdue" : ""}">${formatDate(task.due)}</span>
           </div>
         </div>
-        <button class="task-menu" data-delete="${task.id}" aria-label="Delete task">
-          <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
-        </button>`;
+        <div class="task-actions">
+          <button class="task-menu" data-menu="${task.id}" aria-label="Task actions" aria-expanded="false">
+            <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+          </button>
+          <div class="task-action-menu" data-actions="${task.id}" hidden>
+            <button type="button" data-toggle="${task.id}">${task.completed ? "Mark incomplete" : "Mark complete"}</button>
+            <button type="button" data-edit-course="${task.id}">Change course</button>
+            <button type="button" class="danger" data-delete="${task.id}">Delete task</button>
+          </div>
+        </div>`;
       taskList.appendChild(card);
     });
   }
@@ -418,6 +428,20 @@ function render() {
 document.getElementById("currentDate").textContent = today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 document.getElementById("taskDue").value = isoToday;
 
+function updateDetectedCourse() {
+  if (!courses.length) return;
+  const name = document.getElementById("taskName").value;
+  const notes = document.getElementById("taskNotes").value;
+  const detected = detectCourse(`${name} ${notes}`);
+  if (detected !== "Imported") {
+    const taskCourse = document.getElementById("taskCourse");
+    taskCourse.value = detected;
+  }
+}
+
+document.getElementById("taskName").addEventListener("input", updateDetectedCourse);
+document.getElementById("taskNotes").addEventListener("input", updateDetectedCourse);
+
 document.querySelectorAll(".nav-item").forEach(button => {
   button.addEventListener("click", () => {
     currentView = button.dataset.view;
@@ -433,17 +457,57 @@ document.querySelectorAll(".nav-item").forEach(button => {
 
 taskList.addEventListener("click", event => {
   const check = event.target.closest("[data-id]");
+  const menuButton = event.target.closest("[data-menu]");
+  const toggleButton = event.target.closest("[data-toggle]");
+  const courseButton = event.target.closest("[data-edit-course]");
   const deleteButton = event.target.closest("[data-delete]");
+  const taskId = menuButton ? String(menuButton.dataset.menu)
+    : toggleButton ? String(toggleButton.dataset.toggle)
+    : courseButton ? String(courseButton.dataset.editCourse)
+    : deleteButton ? String(deleteButton.dataset.delete)
+    : check ? String(check.dataset.id) : "";
   if (check) {
-    const task = tasks.find(item => item.id === Number(check.dataset.id));
+    const task = tasks.find(item => String(item.id) === taskId);
+    if (task) task.completed = !task.completed;
+  }
+  if (toggleButton) {
+    const task = tasks.find(item => String(item.id) === taskId);
     if (task) task.completed = !task.completed;
   }
   if (deleteButton) {
-    tasks = tasks.filter(item => item.id !== Number(deleteButton.dataset.delete));
+    tasks = tasks.filter(item => String(item.id) !== taskId);
   }
-  if (check || deleteButton) {
+  if (courseButton) {
+    const task = tasks.find(item => String(item.id) === taskId);
+    if (!task) return;
+    const nextCourse = prompt("Enter course name", task.course || "");
+    if (nextCourse) {
+      const cleanCourse = nextCourse.trim();
+      if (!courses.includes(cleanCourse)) addCourse(cleanCourse);
+      task.course = cleanCourse;
+    }
+  }
+  if (menuButton) {
+    const menu = taskList.querySelector(`[data-actions="${CSS.escape(taskId)}"]`);
+    const isOpen = menu && !menu.hidden;
+    taskList.querySelectorAll(".task-action-menu").forEach(item => item.hidden = true);
+    taskList.querySelectorAll("[data-menu]").forEach(item => item.setAttribute("aria-expanded", "false"));
+    if (menu) {
+      menu.hidden = isOpen;
+      menuButton.setAttribute("aria-expanded", String(!isOpen));
+    }
+    return;
+  }
+  if (check || toggleButton || deleteButton || courseButton) {
     saveTasks();
     render();
+  }
+});
+
+document.addEventListener("click", event => {
+  if (!event.target.closest(".task-actions")) {
+    taskList.querySelectorAll(".task-action-menu").forEach(item => item.hidden = true);
+    taskList.querySelectorAll("[data-menu]").forEach(item => item.setAttribute("aria-expanded", "false"));
   }
 });
 
@@ -464,9 +528,8 @@ taskForm.addEventListener("submit", event => {
   }
   const selectedCourse = document.getElementById("taskCourse").value;
   const notes = document.getElementById("taskNotes").value.trim();
-  const course = selectedCourse === "Imported"
-    ? detectCourse(`${name} ${notes}`)
-    : selectedCourse;
+  const detectedCourse = detectCourse(`${name} ${notes}`);
+  const course = detectedCourse !== "Imported" ? detectedCourse : (selectedCourse === "Imported" ? "Imported" : selectedCourse);
   tasks.push({
     id: Date.now(),
     name,
