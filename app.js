@@ -33,6 +33,15 @@ if (localStorage.getItem("studyflowBlankStart") !== "1") {
 const taskList = document.getElementById("taskList");
 const taskDialog = document.getElementById("taskDialog");
 const taskForm = document.getElementById("taskForm");
+const themeSelect = document.getElementById("themeSelect");
+const themes = ["purple", "light", "ocean", "forest"];
+
+function applyTheme(theme) {
+  const selectedTheme = themes.includes(theme) ? theme : "purple";
+  document.body.dataset.theme = selectedTheme;
+  themeSelect.value = selectedTheme;
+  localStorage.setItem("studyflowTheme", selectedTheme);
+}
 
 function saveTasks() {
   localStorage.setItem("studyflowTasks", JSON.stringify(tasks));
@@ -466,6 +475,8 @@ document.getElementById("mobileMenu").addEventListener("click", () => {
   document.querySelector(".sidebar").classList.toggle("open");
 });
 
+themeSelect.addEventListener("change", event => applyTheme(event.target.value));
+
 const courseDialog = document.getElementById("courseDialog");
 const courseForm = document.getElementById("courseForm");
 document.getElementById("addCourseButton").addEventListener("click", () => courseDialog.showModal());
@@ -482,5 +493,6 @@ courseForm.addEventListener("submit", event => {
   courseDialog.close();
 });
 
+applyTheme(localStorage.getItem("studyflowTheme"));
 renderCourses();
 render();
