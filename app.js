@@ -671,6 +671,26 @@ courseForm.addEventListener("submit", event => {
   updateDetectedCourse();
 });
 
+document.getElementById("resetAppButton").addEventListener("click", () => {
+  if (!confirm("Reset all assignments, classes, and app settings?")) return;
+  if (!confirm("This cannot be undone. Reset everything now?")) return;
+  [
+    "studyflowTasks",
+    "studyflowCourses",
+    "studyflowNavigation",
+    "studyflowTheme"
+  ].forEach(key => localStorage.removeItem(key));
+  localStorage.setItem("studyflowBlankStart", "1");
+  window.location.reload();
+});
+
+const settingsDialog = document.getElementById("settingsDialog");
+document.getElementById("openSettingsButton").addEventListener("click", () => settingsDialog.showModal());
+document.getElementById("closeSettingsDialog").addEventListener("click", () => settingsDialog.close());
+settingsDialog.addEventListener("click", event => {
+  if (event.target === settingsDialog) settingsDialog.close();
+});
+
 applyTheme(localStorage.getItem("studyflowTheme"));
 renderCourses();
 document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === currentView));

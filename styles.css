@@ -179,7 +179,28 @@ button { cursor: pointer; }
 .profile-text { display: grid; gap: 2px; }
 .profile-text strong { font-size: 13px; }
 .profile-text span { color: #989aa5; font-size: 11px; }
-.profile > svg { width: 16px; fill: #9698a3; }
+.profile > svg { width: 16px; fill: none; stroke: #9698a3; stroke-width: 1.5; }
+.reset-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--canvas);
+  color: #df7a7a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.reset-button:hover { border-color: #df7a7a; background: rgba(223, 122, 122, .08); }
+.settings-profile { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-block: 1px solid var(--line); }
+.settings-profile > div:last-child { display: grid; gap: 3px; }
+.settings-profile span { color: var(--muted); font-size: 12px; }
+.settings-section { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.settings-section > div { display: grid; gap: 4px; }
+.settings-section > div strong { font-size: 13px; }
+.settings-section > div span { color: var(--muted); font-size: 12px; }
 
 .main { min-width: 0; overflow-y: auto; }
 .topbar {

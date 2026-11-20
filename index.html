@@ -47,10 +47,10 @@
         </div>
         <nav class="course-list" id="courseList"></nav>
 
-        <button class="profile">
+        <button class="profile" id="openSettingsButton" type="button" aria-label="Open settings">
           <div class="avatar">NS</div>
           <div class="profile-text"><strong>Naitik</strong><span>naitik@college.edu</span></div>
-          <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.42 1.42-.06-.06A1.7 1.7 0 0 0 16.44 18a1.7 1.7 0 0 0-1.02 1.56V20h-2v-.44A1.7 1.7 0 0 0 12.4 18a1.7 1.7 0 0 0-1.88.34l-.06.06-1.42-1.42.06-.06A1.7 1.7 0 0 0 9.44 15a1.7 1.7 0 0 0-1.56-1.02H7.44v-2h.44A1.7 1.7 0 0 0 9.44 10.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06L10.46 7.6l.06.06A1.7 1.7 0 0 0 12.4 8a1.7 1.7 0 0 0 1.02-1.56V6h2v.44A1.7 1.7 0 0 0 16.44 8a1.7 1.7 0 0 0 1.88-.34l.06-.06 1.42 1.42-.06.06A1.7 1.7 0 0 0 19.4 11a1.7 1.7 0 0 0 1.56 1.02H21v2h-.44A1.7 1.7 0 0 0 19.4 15z"/></svg>
         </button>
       </aside>
 
@@ -160,6 +160,29 @@
           <input id="courseName" required placeholder="e.g. Biology 101" />
         </label>
         <button class="submit-button" type="submit">Add course</button>
+      </form>
+    </dialog>
+
+    <dialog class="task-dialog settings-dialog" id="settingsDialog">
+      <form id="settingsForm">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Preferences</p>
+            <h2>Settings</h2>
+          </div>
+          <button type="button" class="dialog-close" id="closeSettingsDialog" aria-label="Close">&times;</button>
+        </div>
+        <div class="settings-profile">
+          <div class="avatar">NS</div>
+          <div><strong>Naitik</strong><span>naitik@college.edu</span></div>
+        </div>
+        <div class="settings-section">
+          <div>
+            <strong>Reset app</strong>
+            <span>Remove assignments, classes, and saved preferences.</span>
+          </div>
+          <button type="button" class="reset-button" id="resetAppButton">Reset</button>
+        </div>
       </form>
     </dialog>
 
